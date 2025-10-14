@@ -5,7 +5,7 @@ phases:
       - echo Loggin in Amazon ECR....
       - aws --version
         # LOGIN DE ECR LO PUEDES OBTNER DE LOS COMANDOS DE ENVIO EN TU ECR
-      - aws ecr get-login-password --region us-west-1 | docker login --username AWS --password-stdin 866317130712.dkr.ecr.us-east-1.amazonaws.com
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 866317130712.dkr.ecr.us-east-1.amazonaws.com
       - # LA URI DE TU TU REPOSITORIO DE ECR
       - REPOSITORY_URI=866317130712.dkr.ecr.us-east-1.amazonaws.com/ms-pokemon
       - IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_NUMBER | awk -F":" '{print $2}')
