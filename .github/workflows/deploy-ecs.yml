@@ -1,0 +1,95 @@
+name: Deploy to Amazon ECS
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+env:
+  # === EDITA ESTOS VALORES ===
+  AWS_REGION: us-east-1                      # p.ej. us-east-1
+  ECR_REPOSITORY: ms-pokemon                 # nombre del repo en ECR
+  ECS_SERVICE: MY_ECS_SERVICE                # nombre del servicio ECS
+  ECS_CLUSTER: MY_ECS_CLUSTER                # nombre del cluster ECS
+  ECS_TASK_DEFINITION: .aws/task-def.json    # ruta a tu task definition JSON en el repo
+  CONTAINER_NAME: my-container               # nombre del contenedor en containerDefinitions
+  # ===========================
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    # Compilar proyecto Java (autodetecta Maven/Gradle)
+    - name: Set up Temurin JDK 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: "17"
+
+    - name: Build Java project (Maven/Gradle autodetect)
+      run: |
+        if [ -f "./mvnw" ]; then
+          echo "Detected Maven Wrapper"
+          chmod +x mvnw
+          ./mvnw -B -DskipTests package
+        elif [ -f "./gradlew" ]; then
+          echo "Detected Gradle Wrapper"
+          chmod +x gradlew
+          ./gradlew build -x test
+        elif [ -f "pom.xml" ]; then
+          echo "Detected Maven (no wrapper)"
+          mvn -B -DskipTests package
+        elif [ -f "build.gradle" ] || [ -f "build.gradle.kts" ]; then
+          echo "Detected Gradle (no wrapper)"
+          gradle build -x test
+        else
+          echo "No build tool detected (Maven/Gradle)."
+          exit 1
+        fi
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build, tag, and push image to Amazon ECR
+      id: build-image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        # Si tu Dockerfile no está en la raíz, añade: -f path/Dockerfile
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push  $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+    - name: Fill in the new image ID in the Amazon ECS task definition
+      id: task-def
+      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      with:
+        task-definition: ${{ env.ECS_TASK_DEFINITION }}
+        container-name: ${{ env.CONTAINER_NAME }}
+        image: ${{ steps.build-image.outputs.image }}
+
+    - name: Deploy Amazon ECS task definition
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      with:
+        task-definition: ${{ steps.task-def.outputs.task-definition }}
+        service: ${{ env.ECS_SERVICE }}
+        cluster: ${{ env.ECS_CLUSTER }}
+        wait-for-service-stability: true
