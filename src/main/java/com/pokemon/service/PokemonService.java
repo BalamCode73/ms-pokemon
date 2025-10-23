@@ -74,5 +74,17 @@ public class PokemonService {
 		return  modelMapper.map(pokemonReq,PokemonResponse.class);
 
 	}
+
+	public boolean deletePokemon(long idPokemon) {
+		Optional<Pokemon> pokemonDel=repository.findByIdEquals(idPokemon);
+		pokemonDel.ifPresentOrElse(pokemon->{
+					repository.delete(pokemon);
+				},
+				()->{
+					throw new EntityNotFoundException("No existe el Pokémon con ID: " + idPokemon);
+				});
+		return  true;
+
+	}
 	    
 }
