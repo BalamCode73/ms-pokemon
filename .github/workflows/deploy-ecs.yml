@@ -9,10 +9,10 @@ env:
   # === EDITA ESTOS VALORES ===
   AWS_REGION: us-east-1                      # p.ej. us-east-1
   ECR_REPOSITORY: ms-pokemon                 # nombre del repo en ECR
-  ECS_SERVICE: MY_ECS_SERVICE                # nombre del servicio ECS
-  ECS_CLUSTER: MY_ECS_CLUSTER                # nombre del cluster ECS
+  ECS_SERVICE: SRV-MICROSERVICE                # nombre del servicio ECS
+  ECS_CLUSTER: CLUSTER-TFM                # nombre del cluster ECS
   ECS_TASK_DEFINITION: .aws/task-def.json    # ruta a tu task definition JSON en el repo
-  CONTAINER_NAME: my-container               # nombre del contenedor en containerDefinitions
+  CONTAINER_NAME: CONTAINER-TASK               # nombre del contenedor en containerDefinitions
   # ===========================
 
 permissions:
