@@ -23,7 +23,7 @@ public class SwaggerConfig {
         return new OpenAPI()
                 .info(new Info().title("Microservicio")
                         .description("Microservicio para obtener pokemons")
-                        .version("v0.0.1")
+                        .version("v0.0.2")
                         .license(new License().name("PokeService").url("https://www.dirsio.com./")))
                 .externalDocs(new ExternalDocumentation()
                         .description("v1")
